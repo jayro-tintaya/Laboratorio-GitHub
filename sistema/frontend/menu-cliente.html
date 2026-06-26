@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Menú Digital - El Puerto de la Costa</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0d1117;
+      color: #f5f0e8;
+      padding: 20px;
+      padding-bottom: 100px;
+    }
+    .header { text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #1a2332, #243044); border-radius: 20px; }
+    .header h1 { font-size: 28px; color: #c9a84c; }
+    .header p { color: #8a9bb0; margin-top: 5px; }
+    .mesa-selector { background: #1a2332; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .mesa-selector label { font-weight: bold; color: #c9a84c; }
+    .mesa-selector select { flex: 1; padding: 10px; background: #243044; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 14px; }
+    .categorias { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px; }
+    .cat-btn { padding: 8px 20px; background: #1a2332; border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; color: #8a9bb0; cursor: pointer; white-space: nowrap; }
+    .cat-btn.active { background: #c9a84c; color: #0d1117; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .menu-card { background: #1a2332; border-radius: 16px; padding: 16px; border: 1px solid rgba(255,255,255,0.05); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .card-emoji { font-size: 40px; }
+    .card-price { font-size: 20px; font-weight: bold; color: #c9a84c; }
+    .card-name { font-size: 18px; font-weight: 600; margin-bottom: 5px; }
+    .card-desc { font-size: 12px; color: #8a9bb0; margin-bottom: 15px; }
+    .add-btn { width: 100%; padding: 10px; background: #c9a84c; border: none; border-radius: 10px; color: #0d1117; font-weight: bold; cursor: pointer; }
+    .cart-fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: #c9a84c; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 100; font-size: 24px; }
+    .cart-count { position: absolute; top: -5px; right: -5px; background: #dc2626; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+    .cart-modal { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #1a2332; border-radius: 20px 20px 0 0; max-height: 80vh; overflow-y: auto; z-index: 200; padding: 20px; }
+    .cart-modal.open { display: block; }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #243044; border-radius: 10px; margin-bottom: 10px; }
+    .cart-item-controls { display: flex; gap: 10px; align-items: center; }
+    .cart-item-controls button { width: 30px; height: 30px; border-radius: 50%; border: none; background: #c9a84c; cursor: pointer; font-size: 18px; }
+    .cart-total { margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 18px; font-weight: bold; text-align: right; }
+    .confirmar-btn { width: 100%; padding: 15px; background: #27ae60; border: none; border-radius: 12px; color: white; font-weight: bold; font-size: 16px; margin-top: 15px; cursor: pointer; }
+    .close-modal { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #8a9bb0; }
+    .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 150; }
+    .overlay.open { display: block; }
+    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #27ae60; color: white; padding: 10px 20px; border-radius: 50px; z-index: 300; animation: fadeOut 2s ease; }
+    @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🌊 El Puerto de la Costa</h1>
+  <p>Menú Digital - Escanea y pide desde tu mesa</p>
+</div>
+
+<div class="mesa-selector">
+  <label>📍 Tu mesa:</label>
+  <select id="mesaSelect">
+    <option value="01 — Ventana">01 — Ventana</option>
+    <option value="02 — Centro">02 — Centro</option>
+    <option value="03 — Terraza">03 — Terraza</option>
+    <option value="04 — Bar">04 — Bar</option>
+    <option value="05 — VIP">05 — VIP</option>
+    <option value="06 — Familiar">06 — Familiar</option>
+    <option value="07 — Jardín">07 — Jardín</option>
+    <option value="Para llevar">🛍️ Para llevar</option>
+  </select>
+</div>
+
+<div class="categorias" id="categorias"></div>
+<div class="menu-grid" id="menuGrid"></div>
+
+<div class="cart-fab" id="cartFab">
+  🛒
+  <span class="cart-count" id="cartCount">0</span>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="cart-modal" id="cartModal">
+  <span class="close-modal" id="closeModal">&times;</span>
+  <h3 style="margin-bottom: 15px;">🛒 Mi Pedido</h3>
+  <div id="cartItemsList"></div>
+  <div class="cart-total" id="cartTotal">Total: Bs. 0.00</div>
+  <button class="confirmar-btn" id="confirmarBtn">✅ Confirmar Pedido</button>
+</div>
+
+<script>
+  const MENU = [
+    {id:1, name:"Ceviche Clásico", desc:"Limón, cebolla morada, ají amarillo", price:45, emoji:"🐟", cat:"Ceviches"},
+    {id:2, name:"Ceviche Mixto", desc:"Pulpo, camarón y mariscos frescos", price:65, emoji:"🦑", cat:"Ceviches"},
+    {id:3, name:"Ceviche de Camarón", desc:"Camarones, cilantro, limón", price:55, emoji:"🦐", cat:"Ceviches"},
+    {id:4, name:"Chupe de Camarones", desc:"Crema, papas, camarones al caldo", price:60, emoji:"🍲", cat:"Sopas"},
+    {id:5, name:"Sopa de Mariscos", desc:"Caldillo, almejas, mejillones", price:55, emoji:"🫕", cat:"Sopas"},
+    {id:6, name:"Arroz con Mariscos", desc:"Arroz amarillo, mariscos variados", price:70, emoji:"🍚", cat:"Arroces"},
+    {id:7, name:"Paella del Puerto", desc:"Arroz, azafrán, mariscos surtidos", price:95, emoji:"🥘", cat:"Arroces"},
+    {id:8, name:"Trucha a la Plancha", desc:"Con ensalada fresca y papas", price:80, emoji:"🐠", cat:"Pescados"},
+    {id:9, name:"Filete de Dorado", desc:"Salsa de ajo y limón", price:85, emoji:"🐡", cat:"Pescados"},
+    {id:10, name:"Camarones al Ajillo", desc:"Ajo, mantequilla, perejil", price:75, emoji:"🍤", cat:"Mariscos"},
+    {id:11, name:"Chicharrón de Calamar", desc:"Frito crujiente, salsa tártara", price:55, emoji:"🦑", cat:"Mariscos"},
+    {id:12, name:"Limonada del Mar", desc:"Limón, hierbabuena", price:18, emoji:"🍋", cat:"Bebidas"},
+    {id:13, name:"Chicha Morada", desc:"Tradicional, bien fría", price:15, emoji:"🥤", cat:"Bebidas"},
+    {id:14, name:"Jugo de Maracuyá", desc:"Natural", price:16, emoji:"🍹", cat:"Bebidas"},
+    {id:15, name:"Flan de Coco", desc:"Cremoso, con caramelo", price:28, emoji:"🍮", cat:"Postres"},
+    {id:16, name:"Torta de Chocolate", desc:"Con helado", price:32, emoji:"🎂", cat:"Postres"}
+  ];
+
+  let carrito = [];
+  let categoriaActiva = "Todos";
+  let categorias = ["Todos", ...new Set(MENU.map(m => m.cat))];
+
+  function renderCategorias() {
+    document.getElementById("categorias").innerHTML = categorias.map(c => 
+      `<button class="cat-btn ${c === categoriaActiva ? 'active' : ''}" onclick="filtrarCategoria('${c}')">${c}</button>`
+    ).join('');
+  }
+
+  function filtrarCategoria(cat) {
+    categoriaActiva = cat;
+    renderCategorias();
+    renderMenu();
+  }
+
+  function renderMenu() {
+    const items = categoriaActiva === "Todos" ? MENU : MENU.filter(m => m.cat === categoriaActiva);
+    document.getElementById("menuGrid").innerHTML = items.map(item => `
+      <div class="menu-card">
+        <div class="card-header">
+          <span class="card-emoji">${item.emoji}</span>
+          <span class="card-price">Bs. ${item.price}</span>
+        </div>
+        <div class="card-name">${item.name}</div>
+        <div class="card-desc">${item.desc}</div>
+        <button class="add-btn" onclick="agregarAlCarrito(${item.id})">➕ Agregar</button>
+      </div>
+    `).join('');
+  }
+
+  function agregarAlCarrito(id) {
+    const item = MENU.find(m => m.id === id);
+    if (!item) return;
+    const existente = carrito.find(c => c.id === id);
+    if (existente) {
+      existente.cantidad++;
+    } else {
+      carrito.push({...item, cantidad: 1});
+    }
+    actualizarCarritoUI();
+    mostrarToast(`${item.emoji} ${item.name} añadido`);
+  }
+
+  function cambiarCantidad(id, delta) {
+    const idx = carrito.findIndex(c => c.id === id);
+    if (idx < 0) return;
+    carrito[idx].cantidad += delta;
+    if (carrito[idx].cantidad <= 0) {
+      carrito.splice(idx, 1);
+    }
+    actualizarCarritoUI();
+  }
+
+  function actualizarCarritoUI() {
+    const count = carrito.reduce((s, i) => s + i.cantidad, 0);
+    document.getElementById("cartCount").textContent = count;
+    
+    const itemsContainer = document.getElementById("cartItemsList");
+    if (carrito.length === 0) {
+      itemsContainer.innerHTML = "<div style='text-align: center; color: #8a9bb0; padding: 20px;'>🛒 Tu carrito está vacío</div>";
+    } else {
+      itemsContainer.innerHTML = carrito.map(item => `
+        <div class="cart-item">
+          <div class="cart-item-info">
+            <div><strong>${item.emoji} ${item.name}</strong></div>
+            <div style="font-size: 12px; color: #c9a84c;">Bs. ${item.price} c/u</div>
+          </div>
+          <div class="cart-item-controls">
+            <button onclick="cambiarCantidad(${item.id}, -1)">-</button>
+            <span style="min-width: 30px; text-align: center;">${item.cantidad}</span>
+            <button onclick="cambiarCantidad(${item.id}, 1)">+</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    const total = carrito.reduce((s, i) => s + (i.price * i.cantidad), 0);
+    document.getElementById("cartTotal").innerHTML = `Total: Bs. ${total.toFixed(2)}`;
+  }
+
+  function mostrarToast(msg) {
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  }
+
+  async function enviarPedido() {
+    if (carrito.length === 0) {
+      mostrarToast("⚠️ Agrega items a tu pedido primero");
+      return;
+    }
+    
+    const mesa = document.getElementById("mesaSelect").value;
+    const subtotal = carrito.reduce((s, i) => s + (i.price * i.cantidad), 0);
+    const total = subtotal;
+    
+    const pedido = {
+      mesa: mesa,
+      items: carrito.map(i => ({
+        id: i.id,
+        name: i.name,
+        price: i.price,
+        cantidad: i.cantidad,
+        subtotal: i.price * i.cantidad
+      })),
+      subtotal: subtotal,
+      total: total,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Enviar pedido al servidor (funciona desde cualquier dispositivo en la red)
+    const serverUrl = window.location.origin;
+    
+    try {
+      const resp = await fetch(`${serverUrl}/api/pedido`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pedido)
+      });
+      
+      if (resp.ok) {
+        carrito = [];
+        actualizarCarritoUI();
+        cerrarModal();
+        mostrarToast("✅ ¡Pedido enviado! En breve lo atenderán 🍽️");
+      } else {
+        mostrarToast("❌ Error al enviar pedido. Intenta de nuevo.");
+      }
+    } catch(e) {
+      mostrarToast("❌ No se pudo conectar al servidor.");
+    }
+  }
+
+  function abrirModal() {
+    document.getElementById("cartModal").classList.add("open");
+    document.getElementById("overlay").classList.add("open");
+  }
+  
+  function cerrarModal() {
+    document.getElementById("cartModal").classList.remove("open");
+    document.getElementById("overlay").classList.remove("open");
+  }
+
+  document.getElementById("cartFab").onclick = abrirModal;
+  document.getElementById("closeModal").onclick = cerrarModal;
+  document.getElementById("overlay").onclick = cerrarModal;
+  document.getElementById("confirmarBtn").onclick = enviarPedido;
+
+  renderCategorias();
+  renderMenu();
+  actualizarCarritoUI();
+</script>
+</body>
+</html>
